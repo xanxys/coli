@@ -1,0 +1,17 @@
+
+Functionality
+ * load ascii and binary STL file
+ * show rotating 3d model (if WebGL is enabled)
+ * generate G code
+ * view G code as tree and XY plane trajectory
+
+G Code Format
+ Maybe compatible with http://reprap.org/wiki/G-code
+ Currently, it only generates G0, G1 and G4.
+
+External Libraries
+ * jQuery and jQuery UI: http://jquery.com/
+ * jstree (jQuery plugin): http://www.jstree.com/
+ * mousewheel (jQuery plugin): https://github.com/brandonaaron/jquery-mousewheel
+ * Sylvester: http://sylvester.jcoglan.com/
+
