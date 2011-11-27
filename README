@@ -5,6 +5,19 @@ Functionality
  * generate G code
  * view G code as tree and XY plane trajectory
 
+How to Use (local)
+ + put all files in a directory
+ + run ./conv to convert .coffee to .js
+ + access index.html with file:// scheme. You might have to use flags such as
+     --allow-file-access-from-files (for Chrome)
+
+How to Use (server-side)
+ + put all files in a directory
+ + run ./conv
+ + (optional) remove all .coffee files and ./conv
+ + put the directory somewhere
+
+
 G Code Format
  Maybe compatible with http://reprap.org/wiki/G-code
  Currently, it only generates G0, G1 and G4.
