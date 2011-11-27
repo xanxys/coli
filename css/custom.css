@@ -1,0 +1,26 @@
+
+#commands{
+    border: 1px solid black;
+    
+    height: 20em;
+    overflow: scroll;
+    
+}
+
+
+/* "print preview" tab */
+#tab_prev{
+    height: 520px;
+}
+
+#gcode_tree{
+    width: 300px;
+    height: 500px;
+    overflow: auto;
+}
+
+#view_gcode{
+    width: 500px;
+    height: 500px;
+}
+

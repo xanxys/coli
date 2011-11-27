@@ -1,0 +1,5 @@
+#!/bin/env fish
+
+coffee -c -b STL.coffee
+coffee -c main.coffee generate.coffee
+

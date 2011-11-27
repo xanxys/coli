@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+ 
+<html>
+<head>
+<meta charset="utf-8"/>
+<title>coli print control</title>
+<script type="text/gl-vertex" src="vertex.glsl"></script>
+<script type="text/gl-fragment" src="fragment.glsl"></script>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="jquery-ui.js"></script>
+<script type="text/javascript" src="jquery.jstree.js"></script>
+<script type="text/javascript" src="jquery.mousewheel.js"></script>
+<script type="text/javascript" src="glMatrix.js"></script>
+<script type="text/javascript" src="sylvester.js"></script>
+<script type="text/javascript" src="base64.js"></script>
+<script type="text/javascript" src="STL.js"></script>
+<script type="text/javascript" src="main.js"></script>
+<link type="text/css" rel="stylesheet" href="css/ui-lightness/jquery-ui-1.8.16.custom.css"/>
+<link type="text/css" rel="stylesheet" href="css/custom.css"/>
+</head> 
+ 
+ 
+ 
+<body>
+
+
+<div id="menu">
+    <ul>
+        <li><a href="#tab_model">Model Alignment</a></li>
+        <li><a href="#tab_conv">Print Config</a></li>
+        <li><a href="#tab_prev">Print Preview</a></li>
+    </ul>
+    
+    <div id="tab_model">
+        <div>
+            <div style="float:left">
+                select an STL file:
+                <input type="file" id="files" accept="application/sla">
+
+                <div id="model_info"></div>
+                
+                <table>
+                    <thead>
+                        <tr><th>axis</th><th>min</th><th>max</th><th>span</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>x</td><td>-</td><td>-</td><td>-</td></tr>
+                        <tr><td>y</td><td>-</td><td>-</td><td>-</td></tr>
+                        <tr><td>z</td><td>-</td><td>-</td><td>-</td></tr>
+                    </tbody>
+                </table>
+                
+                <button>rotate</button>
+            </div>
+            <canvas id="view_3d" width="500" height="500"></canvas>
+            <div id="view"></div>
+        </div>
+        <div style="clear:both">
+            <div id="prog_model"></div>
+        </div>
+    </div>
+
+    <div id="tab_conv">
+        <div>
+            <div style="float:left">
+                x offset <input type="entry" id="offset_x" value="45"/>mm<br/>
+                y offset <input type="entry" id="offset_y" value="80"/>mm<br/>
+                z offset <input type="entry" id="offset_z" value="7.5"/>mm<br/>
+                
+                S<sub>filament</sub>/S<sub>extruded</sub> <input type="entry" id="section_coeff" value="1"/><br/>
+                extruded width <input type="entry" id="ext_width" value="1.5"/>mm<br/>
+                layer thickness <input type="entry" id="layer_thickness" value="0.8"/>mm<br/>
+                head speed(F)<input type="entry" id="head_speed" value="500"/>mm/min<br/>
+                
+                
+                z<input type="range" id="layer_pos"/><br/>
+            </div>
+            <canvas id="view_2d" width="500" height="500"></canvas>
+        </div>
+        <div style="clear:both">
+            <button id="btn_finish_conv">Generate Commands</button>
+            <div id="prog_conv"></div>
+        </div>
+    </div>
+    
+    <div id="tab_prev">
+        <div>
+            <div style="float:left" id="gcode_tree"></div>
+            <canvas id="view_gcode" width="500" height="500"></canvas>
+        </div>
+        <div style="clear:both">
+            <button id="btn_finish_prev">download</button>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
+
