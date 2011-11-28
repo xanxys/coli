@@ -6,6 +6,9 @@ load_text_stl=(file,complete,error)->
         tokens=(e.target.result.split /\s+/).reverse()
         
         shift_check=(w)->
+            if tokens.length==0
+                throw new Error "expecting '#{w}', reached end of file"
+            
             t=tokens.pop()
             if t!=w
                 throw new Error "expecting '#{w}', found '#{t}'"
