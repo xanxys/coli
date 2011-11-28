@@ -34,7 +34,8 @@ load_text_stl=(file,complete,error)->
         
         shift_solid=()->
             shift_check 'solid'
-            solid_id=tokens.pop()
+            while tokens[tokens.length-1]!='facet'
+                tokens.pop()
             
             tris=[]
             
