@@ -92,14 +92,6 @@ $.ajax
 
 
 render_layer=(ctx,layer)->
-    labels=[]
-    col_dict={}
-    
-    new_color=()->
-        r=150+Math.floor(Math.random()*100)
-        g=150+Math.floor(Math.random()*100)
-        b=150+Math.floor(Math.random()*100)
-        "rgb(#{r},#{g},#{b})"
 
     ctx.save()
     #ctx.scale 0.5, 0.5
@@ -107,32 +99,12 @@ render_layer=(ctx,layer)->
     # draw image
     for iy in [0...layer.ny]
         for ix in [0...layer.nx]
-            prob=0
-            name=layer.array[ix+iy*layer.nx]
-            if name==null
-                ctx.fillStyle='black'
-            else if col_dict[name]?
-                ctx.fillStyle=col_dict[name]
-                prob=0.0001
+            if layer.array[ix+iy*layer.nx]>0
+                ctx.fillStyle='white'
             else
-                ctx.fillStyle=col_dict[name]=new_color()
-                prob=1
-
-            if Math.random()<prob
-                labels.push
-                    pos:
-                        x: ix
-                        y: iy
-                    name:
-                        name
+                ctx.fillStyle='black'
 
             ctx.fillRect ix,iy,1,1
-    
-    # draw labels
-    ctx.fillStyle='black'
-
-    for lb in labels
-        ctx.fillText lb.name, lb.pos.x, lb.pos.y
     
     ctx.restore()
     
@@ -163,16 +135,17 @@ draw_gcode=(ctx,cmd,model,offset)->
         switch cmd.type
             when 'command'
                 if cmd.arguments.v?
-                    if cmd.code=='G1'
-                        ctx.lineWidth=3/k
-                        ctx.strokeStyle='rgba(0,0,0,0.5)'
-                    else if cmd.code=='G0'
-                        ctx.lineWidth=1/k
-                        ctx.strokeStyle='rgba(0,0,255,0.5)'
-                    else
-                        ctx.lineWidth=1/k
-                        ctx.strokeStyle='rgba(255,0,0,0.5)'
-                        
+                    switch cmd.code
+                        when 'G0' # fast move
+                            ctx.lineWidth=1/k
+                            ctx.strokeStyle='rgba(0,0,255,0.5)'
+                        when 'G1' # extrude move
+                            ctx.lineWidth=3/k
+                            ctx.strokeStyle='rgba(0,0,0,0.5)'
+                        else
+                            ctx.lineWidth=1/k
+                            ctx.strokeStyle='rgba(255,0,0,0.5)'
+                    
                     if prev==null
                         ctx.beginPath()
                         ctx.arc cmd.arguments.v.elements[0], cmd.arguments.v.elements[1], 5/k, 0, 2*Math.PI
@@ -185,6 +158,19 @@ draw_gcode=(ctx,cmd,model,offset)->
                         ctx.closePath()
                         ctx.stroke()
                     prev=cmd.arguments.v
+                else
+                    switch cmd.code
+                        when 'G4' # dwell
+                            ctx.fillStyle='rgba(0,255,0,0.5)'
+                        else
+                            ctx.fillStyle='rgba(255,0,0,0.5)'
+                    
+                    if prev!=null
+                        ctx.beginPath()
+                        ctx.arc prev.elements[0], prev.elements[1], 3/k, 0, 2*Math.PI
+                        ctx.closePath()
+                        ctx.stroke()
+                    
             when 'block'
                 for cc in cmd.sequence
                     track cc
@@ -312,30 +298,32 @@ $ ->
             console.log 'generator worker emitted error:',ev
         
         w.onmessage=(ev)->
-            if ev.data.type=='debug'
-                console.log.apply console, ev.data.message
-            else
-            
-                $('#prog_conv').progressbar 'value', 100*(ev.data.i+1)/nls
-                layers.push ev.data.result.typed_commands
+            switch ev.data.type
+                when 'debug'
+                    console.log.apply console, ev.data.message
+                when 'layer'
+                    render_layer ctx, ev.data.layer
+                when 'normal'
+                    $('#prog_conv').progressbar 'value', 100*(ev.data.i+1)/nls
+                    layers.push ev.data.result.typed_commands
 
-                if ev.data.i==nls-1
-                    w.terminate()
-                    
-                    model.gcode={type:'block',label:'print',sequence:layers}
-                    
-                    $('#gcode_tree').jstree
-                        json_data:
-                            data: gcode_to_jstree model.gcode
-                        themes:
-                            theme: 'apple'
-                            icons: false                
-                        plugins: ['json_data','themes','ui']
-                    
-                    $('#gcode_tree').bind 'select_node.jstree', (ev,data)->
-                        draw_gcode ctx_gcode, data.rslt.obj.data(), model,
-                            (parseFloat $("#offset_#{axis}").val() for axis in ['x','y'])
-            
+                    if ev.data.i==nls-1
+                        w.terminate()
+                        
+                        model.gcode={type:'block',label:'print',sequence:layers}
+                        
+                        $('#gcode_tree').jstree
+                            json_data:
+                                data: gcode_to_jstree model.gcode
+                            themes:
+                                theme: 'apple'
+                                icons: false                
+                            plugins: ['json_data','themes','ui']
+                        
+                        $('#gcode_tree').bind 'select_node.jstree', (ev,data)->
+                            draw_gcode ctx_gcode, data.rslt.obj.data(), model,
+                                (parseFloat $("#offset_#{axis}").val() for axis in ['x','y'])
+                
             
         $('#commands').text ''
         w.postMessage

@@ -89,7 +89,7 @@ convert_segment=(section_coeff,speed,ps)->
             pack_block 'segment end', [
                 pack_command "G0", {er:-10} # reversing
                 pack_command "G1", # connect with previous segment
-                    v:pt_array[0].add(last_dir.multiply(1))
+                    v:pt_array[0].add(last_dir.multiply(0.1)) # TODO: parametrize "0.1"s here
                     z:z_base-0.1
                 pack_command "G4" # wait for connection to end (unnecessary)
                     p: 1000
@@ -214,12 +214,15 @@ class BinaryImage
             
             while true
                 # rotate pe CCW
-                while true
+                for i in [1..9]
                     pe_next=rotate_ccw pe, pi
                     if @get(pe_next[0],pe_next[1])
                         break
                     else
                         pe=pe_next
+                    
+                    if i==9
+                        return pts
                 
                 # rotate pi CW
                 while true
@@ -298,6 +301,9 @@ class BinaryImage
                 erode_pixel ix, iy
         
         img
+    
+    dilate: (w)->
+        @logic_not().erode(w).logic_not()
     
     fill: (x,y)->
         img=@copy()
@@ -428,16 +434,26 @@ class Layer
             offset.add @p0.add(p.multiply @scale).to3D()
         
         # in-set exterior
-        region=region.erode half
-        
+        region=region.erode(half).erode(1).dilate(1)
+
+        postMessage
+            type: 'layer'
+            layer: region
+            
+
         # find all surfaces
         for bnd in region.boundaries()
             segs.push (to_vec3 $V(pt) for pt in bnd)
         
+        
         # in-set further
-        region=region.erode half
+        region=region.erode(half).erode(1).dilate(1)
+
+        postMessage
+            type: 'layer'
+            layer: region
             
-        # generate internal path (along y axis)
+        # generate internal path along axis
         jitter=Math.floor(Math.random()*l_width)
         
         if infill_y
