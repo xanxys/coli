@@ -531,31 +531,63 @@ slice_layer=(z,tris,p0,p1)->
     
     layer
 
+generate_raft=(c0,c1,section_coeff,speed)->
+    dx=3
+    
+    seg=[]
+    for i in [0..Math.floor((c1.e(1)-c0.e(1))/dx)]
+        line=[
+            $V([c0.e(1)+dx*i,c0.e(2),c0.e(3)])
+            $V([c0.e(1)+dx*i,c1.e(2),c0.e(3)])
+        ]
+            
+        if i%2==0
+            seg=seg.concat line
+        else
+            seg=seg.concat line.reverse()
+    
+    pack_block "raft", [convert_segment section_coeff, speed, seg]
+    
 
 
 @onmessage=(ev)->
+    # de-serialize model
     model=ev.data.model
+    model.pos0=$V(model.pos0)
+    model.pos1=$V(model.pos1)
+    model.diag=model.pos1.subtract model.pos0
     
+    #
+    current_offset=$V(ev.data.offset)
+    
+    layers=[]
+    if ev.data.raft
+        c0=current_offset.add(model.pos0).subtract($V([5,5,0]))
+        c1=current_offset.add(model.pos1).add($V([5,5,0]))
+        layers.push generate_raft c0, c1, ev.data.section_coeff, ev.data.speed
+        current_offset=current_offset.add($V([0,0,ev.data.layer_thickness]))
+
     infill_dir=true
-    
-    for i in [ev.data.i_begin..ev.data.i_end]
+    z_scan=model.pos0.e(3)+ev.data.layer_thickness*0.5 # avoid null layer
+    layer_no=0
+    while z_scan<model.pos1.e(3)
         layer=
-            slice_layer ev.data.z_begin+i*ev.data.z_step, model.tris,
-                Vector.create(model.pos0).to2D(), Vector.create(model.pos1).to2D()
+            slice_layer z_scan, model.tris, model.pos0.to2D(), model.pos1.to2D()
         
-        offset=$V(ev.data.offset).add($V([0,0,ev.data.z_step]).multiply(i))
-        
-        cmd_layer=
-            pack_block "layer #{i}",
-               layer.to_commands ev.data.section_coeff, offset, ev.data.speed, ev.data.lwidth, infill_dir
+        layers.push pack_block "layer #{layer_no++}",
+           layer.to_commands ev.data.section_coeff, current_offset, ev.data.speed, ev.data.lwidth, infill_dir
+
+        current_offset=current_offset.add($V([0,0,ev.data.layer_thickness]))
+        z_scan+=ev.data.layer_thickness
         
         infill_dir=not infill_dir
         
         postMessage
-            type: 'normal'
-            i: i
-            result:
-                typed_commands: cmd_layer
-                layer: layer
+            type: 'tick'
+            progress: (z_scan-model.pos0.e(3))/(model.pos1.e(3)-model.pos0.e(3))
+    
+    postMessage
+        type: 'finish'
+        gcode: pack_block 'print', layers
 
 

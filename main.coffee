@@ -116,10 +116,12 @@ draw_gcode=(ctx,cmd,model,offset)->
     ctx.fillRect 0,0,500,500
     
 
-    margin=10
+    
+    margin_px=10
+    margin_mm=5
     k=Math.min(
-       (500-margin*2)/(model.pos1[0]-model.pos0[0]),
-       (500-margin*2)/(model.pos1[1]-model.pos0[1]))
+       (500-margin_px*2)/(margin_mm*2+model.pos1[0]-model.pos0[0]),
+       (500-margin_px*2)/(margin_mm*2+model.pos1[1]-model.pos0[1]))
     xm=(model.pos1[0]+model.pos0[0])/2+offset[0]
     ym=(model.pos1[1]+model.pos0[1])/2+offset[1]
     console.log model.pos0,k,xm,ym
@@ -287,12 +289,8 @@ $ ->
         hs=parseFloat $('#head_speed').val()
         s_coeff=parseFloat $('#section_coeff').val()
         lwidth=parseFloat $('#ext_width').val()
+        raft=$('#raft').attr('checked')
         
-        
-        layers=[]
-        
-        nls=Math.ceil (model.pos1[2]-model.pos0[2])/lth
-
         w=new Worker 'generate.js'
         w.onerror=(ev)->
             console.log 'generator worker emitted error:',ev
@@ -303,38 +301,36 @@ $ ->
                     console.log.apply console, ev.data.message
                 when 'layer'
                     render_layer ctx, ev.data.layer
-                when 'normal'
-                    $('#prog_conv').progressbar 'value', 100*(ev.data.i+1)/nls
-                    layers.push ev.data.result.typed_commands
+                when 'tick'
+                    $('#prog_conv').progressbar 'value', 100*ev.data.progress
+                when 'finish'
+                    console.log ev.data
+                    w.terminate()
+                    model.gcode=ev.data.gcode
+                    
+                    $('#gcode_tree').jstree
+                        json_data:
+                            data: gcode_to_jstree model.gcode
+                        themes:
+                            theme: 'apple'
+                            icons: false                
+                        plugins: ['json_data','themes','ui']
+                    
+                    $('#gcode_tree').bind 'select_node.jstree', (ev,data)->
+                        draw_gcode ctx_gcode, data.rslt.obj.data(), model,
+                            (parseFloat $("#offset_#{axis}").val() for axis in ['x','y'])
+                    
+                    $('#prog_conv').progressbar 'value', 100
 
-                    if ev.data.i==nls-1
-                        w.terminate()
-                        
-                        model.gcode={type:'block',label:'print',sequence:layers}
-                        
-                        $('#gcode_tree').jstree
-                            json_data:
-                                data: gcode_to_jstree model.gcode
-                            themes:
-                                theme: 'apple'
-                                icons: false                
-                            plugins: ['json_data','themes','ui']
-                        
-                        $('#gcode_tree').bind 'select_node.jstree', (ev,data)->
-                            draw_gcode ctx_gcode, data.rslt.obj.data(), model,
-                                (parseFloat $("#offset_#{axis}").val() for axis in ['x','y'])
-                
             
         $('#commands').text ''
         w.postMessage
+            raft: raft
             section_coeff: s_coeff
             lwidth: lwidth
             speed: hs
             offset: offset
-            i_begin: 0
-            i_end: nls-1
-            z_begin: model.pos0[2]
-            z_step: lth
+            layer_thickness: lth
             model: model
     
     $('#btn_finish_prev').click ->
