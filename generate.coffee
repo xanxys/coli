@@ -1,4 +1,4 @@
-importScripts 'sylvester.js'
+importScripts 'lib/sylvester.js'
 
 Vector.prototype.to2D=()->
     $V [@e(1),@e(2)]
